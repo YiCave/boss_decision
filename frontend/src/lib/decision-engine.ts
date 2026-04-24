@@ -22,6 +22,8 @@ export interface Decision {
   reasoning: string;
   risk: "Low" | "Medium" | "High";
   confidence: number;
+  conservativeView?: string;
+  aggressiveView?: string;
 }
 
 export interface AnalysisResult {
@@ -77,6 +79,7 @@ interface BackendAnalyzeResponse {
   agent_insights?: Array<{
     agent_name?: string;
     findings?: string[];
+    risks?: string[];
     recommendation?: string;
   }>;
   conservative_view?: string;
@@ -124,6 +127,8 @@ const fireEmployeeResult: AnalysisResult = {
       "Short-term termination cost (RM 65k including replacement & ramp) outweighs near-term benefit. A structured Performance Improvement Plan preserves optionality with measurable exit criteria.",
     risk: "Medium",
     confidence: 78,
+    conservativeView: "Short-term replacement cost (RM 45k+) and onboarding risk outweigh the savings. Try a 60-day PIP with clear, measurable goals before considering termination.",
+    aggressiveView: "Sustained underperformance hurts team morale and revenue. Cut losses now and backfill from the active pipeline to unlock higher-impact capacity.",
   },
 };
 
@@ -156,6 +161,8 @@ const acquireResult: AnalysisResult = {
       "Strategic upside is significant and financing is available, but a 10% price reduction protects margin. Strong walk-away position keeps leverage.",
     risk: "Medium",
     confidence: 84,
+    conservativeView: "Negotiate down to RM 3.5M. Pay a fair multiple and walk away if the seller refuses — organic growth is a viable alternative.",
+    aggressiveView: "Acquire immediately at full price. Speed wins; closing fast prevents a competing bid and locks in market consolidation.",
   },
 };
 
@@ -188,6 +195,8 @@ const expansionResult: AnalysisResult = {
       "Inbound demand is real but unproven at scale. A 6-month remote pod de-risks the move while preserving a fast path to a full office if KPIs hit.",
     risk: "Low",
     confidence: 82,
+    conservativeView: "Start with a remote sales pod to validate demand for 6 months before opening an office. Limits downside exposure to ~RM 400k.",
+    aggressiveView: "Launch a full office in Q1 to capture first-mover advantage in a hot market. Inbound leads already signal product-market fit.",
   },
 };
 
@@ -219,7 +228,7 @@ function analyzeMock(query: string): AnalysisResult {
         id: "t1",
         actor: "manager_tldr",
         label: "Manager Agent",
-        text: `${base.decision.verdict}. ${base.decision.reasoning}`,
+        text: `**${base.decision.verdict}**\n\n${base.decision.reasoning}`,
       },
     ],
     routing: {
@@ -229,6 +238,42 @@ function analyzeMock(query: string): AnalysisResult {
     },
     usedMockFallback: true,
   };
+}
+
+function formatAgentInsight(insight: { findings?: string[]; risks?: string[]; recommendation?: string }): string {
+  const parts: string[] = [];
+  if (insight.findings?.length) {
+    parts.push("**Findings**");
+    insight.findings.forEach((f) => parts.push(`- ${f}`));
+  }
+  if (insight.risks?.length) {
+    if (parts.length) parts.push("");
+    parts.push("**Risks**");
+    insight.risks.forEach((r) => parts.push(`- ${r}`));
+  }
+  if (insight.recommendation) {
+    if (parts.length) parts.push("");
+    parts.push("**Recommendation**");
+    parts.push(insight.recommendation);
+  }
+  return parts.join("\n") || "No information available";
+}
+
+function cleanRationale(rationale: string): string {
+  return rationale
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      if (t.startsWith("Multi-agent analysis:")) return false;
+      if (/^\[[\w\s/]+\]/.test(t)) return false;
+      if (/^(Conservative|Aggressive) perspective:/i.test(t)) return false;
+      return true;
+    })
+    .map((line) => line.replace(/^\s*Manager Decision \([^)]+\):\s*/g, ""))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function analyzeDecision(query: string, options: AnalyzeOptions): Promise<AnalysisResult> {
@@ -309,9 +354,11 @@ export async function analyzeDecision(query: string, options: AnalyzeOptions): P
 
     const decision: Decision = {
       verdict: payload.final_decision?.recommendation || "No recommendation",
-      reasoning: payload.final_decision?.rationale || "No rationale",
+      reasoning: cleanRationale(payload.final_decision?.rationale || ""),
       risk: payload.final_decision?.risk_level || "Medium",
       confidence: Math.round(payload.final_decision?.confidence_score || 0),
+      conservativeView: payload.conservative_view,
+      aggressiveView: payload.aggressive_view,
     };
 
     const chat: ChatMessage[] = [
@@ -336,13 +383,17 @@ export async function analyzeDecision(query: string, options: AnalyzeOptions): P
         id: `a${idx + 1}`,
         actor: "agent" as const,
         label: `${insight.agent_name || "Unknown"} Agent`,
-        text: insight.recommendation || insight.findings?.[0] || "No recommendation",
+        text: formatAgentInsight({
+          findings: insight.findings,
+          risks: insight.risks,
+          recommendation: insight.recommendation,
+        }),
       })),
       {
         id: "m1",
         actor: "manager_tldr",
         label: "Manager Agent",
-        text: `${decision.verdict}. ${decision.reasoning}`,
+        text: `**${decision.verdict}**\n\n${decision.reasoning}`.trim(),
       },
     ];
 

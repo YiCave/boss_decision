@@ -213,13 +213,14 @@ class FinanceAgent(BaseAgent):
                 trend=result.get("trend", "flat"),
             )
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Finance Zhipu failed: %s", exc)
+            logger.error("Finance LLM failed (Zhipu + Gemini both unavailable): %s", exc)
+            record_count = len([e for e in evidence if e.get("source") == "finance_record"])
             return AgentInsight(
                 agent_name="Finance",
-                findings=[f"Analyzed {len([e for e in evidence if e.get('source') == 'finance_record'])} records (fallback)."],
-                risks=["Re-validate before committing spend"],
-                recommendation="Re-run with valid Zhipu config or check data",
-                confidence=0.5,
+                findings=[f"Retrieved {record_count} finance record(s) but LLM analysis is temporarily unavailable."],
+                risks=["AI analysis service is down — conclusions cannot be drawn automatically"],
+                recommendation="Retry in a few moments; both Zhipu and Gemini are currently unreachable.",
+                confidence=0.1,
                 evidence_used=evidence,
                 emoji="💰",
             )
