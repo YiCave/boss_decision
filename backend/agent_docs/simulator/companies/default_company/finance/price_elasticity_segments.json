@@ -1,0 +1,33 @@
+{
+  "note": "Synthetic data for simulator testing",
+  "as_of": "2026-03-31",
+  "currency": "USD",
+  "method": "historical promo and price-step regression",
+  "elasticity_estimates": [
+    {
+      "segment": "students",
+      "short_run_elasticity": -1.42,
+      "confidence": 0.67,
+      "comment": "Highly price sensitive; strong substitution to competitors."
+    },
+    {
+      "segment": "young_professionals",
+      "short_run_elasticity": -0.91,
+      "confidence": 0.71,
+      "comment": "Moderate sensitivity; responds to brand and design drops."
+    },
+    {
+      "segment": "performance_athletes",
+      "short_run_elasticity": -0.63,
+      "confidence": 0.64,
+      "comment": "Lower sensitivity when performance claims are validated."
+    }
+  ],
+  "scenario_stress_test": {
+    "uniform_10pct_price_increase": {
+      "expected_revenue_delta_pct": -1.8,
+      "expected_margin_delta_pp": 2.2,
+      "highest_risk_segment": "students"
+    }
+  }
+}

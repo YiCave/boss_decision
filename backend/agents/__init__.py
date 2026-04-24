@@ -12,12 +12,12 @@ from .supply_chain_agent import SupplyChainAgent
 from .manager_agent import ManagerAgent
 
 __all__ = [
-    'BaseAgent',
-    'HRAgent',
-    'SalesAgent',
-    'LegalAgent',
-    'FinanceAgent',
-    'MarketingAgent',
-    'SupplyChainAgent',
-    'ManagerAgent'
+    "BaseAgent",
+    "HRAgent",
+    "SalesAgent",
+    "LegalAgent",
+    "FinanceAgent",
+    "MarketingAgent",
+    "SupplyChainAgent",
+    "ManagerAgent",
 ]

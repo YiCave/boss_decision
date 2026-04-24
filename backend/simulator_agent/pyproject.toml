@@ -1,0 +1,14 @@
+[project]
+name = "simulator-agent-umh26"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "deepagents",
+    "langchain",
+    "langchain-mcp-adapters",
+    "langchain-google-genai",
+    "langgraph",
+    "tavily-python",
+]

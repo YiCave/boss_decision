@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, Gauge } from "lucide-react";
+﻿import { CheckCircle2, AlertTriangle, Gauge } from "lucide-react";
 import { Decision } from "@/lib/decision-engine";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";

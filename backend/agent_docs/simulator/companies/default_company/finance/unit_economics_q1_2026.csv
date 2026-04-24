@@ -1,0 +1,5 @@
+segment,avg_selling_price_usd,unit_cost_usd,gross_margin_pct,quarterly_units,repeat_purchase_90d_pct
+students,78,43,44.9,182000,21.0
+young_professionals,112,56,50.0,144000,28.3
+performance_athletes,136,64,52.9,61000,31.8
+all_customers,98,50,49.0,387000,25.9

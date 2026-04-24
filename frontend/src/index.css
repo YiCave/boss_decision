@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@500;700;800&display=swap');
+﻿@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -10,53 +10,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 196 38% 97%;
-    --foreground: 214 38% 14%;
+    --background: 38 56% 96%;
+    --foreground: 204 32% 16%;
 
-    --card: 210 33% 99%;
-    --card-foreground: 214 38% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 204 32% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 204 32% 16%;
 
-    --primary: 206 94% 47%;
+    --primary: 18 88% 51%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 190 87% 68%;
+    --primary-glow: 20 95% 67%;
 
-    --secondary: 214 32% 94%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 35 45% 92%;
+    --secondary-foreground: 204 32% 16%;
 
-    --muted: 214 32% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 42 37% 93%;
+    --muted-foreground: 203 14% 38%;
 
-    --accent: 187 79% 42%;
+    --accent: 171 66% 36%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 148 62% 34%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 86% 44%;
+    --warning-foreground: 46 70% 98%;
 
-    --conservative: 199 89% 48%;
-    --aggressive: 14 91% 55%;
+    --conservative: 171 66% 36%;
+    --aggressive: 10 78% 52%;
 
-    --border: 201 30% 84%;
-    --input: 206 28% 91%;
-    --ring: 206 94% 47%;
+    --border: 36 31% 82%;
+    --input: 35 40% 88%;
+    --ring: 18 88% 51%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(206 94% 47%), hsl(187 79% 42%));
-    --gradient-decision: linear-gradient(132deg, hsl(206 94% 47%) 0%, hsl(217 90% 55%) 52%, hsl(187 79% 42%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(196 38% 97%) 0%, hsl(204 31% 93%) 100%);
+    --gradient-primary: linear-gradient(140deg, hsl(18 88% 51%), hsl(10 78% 52%));
+    --gradient-decision: linear-gradient(145deg, hsl(204 32% 16%) 0%, hsl(198 30% 21%) 100%);
+    --gradient-subtle: radial-gradient(circle at 8% 4%, hsl(40 92% 90%) 0%, transparent 42%), radial-gradient(circle at 88% 12%, hsl(171 40% 88%) 0%, transparent 36%), linear-gradient(180deg, hsl(38 56% 96%) 0%, hsl(35 45% 92%) 100%);
 
-    --shadow-card: 0 2px 10px -5px hsl(205 58% 20% / 0.12), 0 1px 3px -1px hsl(205 58% 20% / 0.08);
-    --shadow-elevated: 0 22px 40px -18px hsl(201 88% 46% / 0.35), 0 8px 15px -8px hsl(205 58% 20% / 0.2);
-    --shadow-glow: 0 0 44px hsl(190 87% 68% / 0.42);
+    --shadow-card: 0 1px 1px hsl(205 20% 20% / 0.05), 0 10px 24px -16px hsl(203 28% 24% / 0.22);
+    --shadow-elevated: 0 20px 40px -24px hsl(15 70% 40% / 0.34), 0 8px 24px -12px hsl(203 28% 24% / 0.25);
+    --shadow-glow: 0 0 40px hsl(20 95% 67% / 0.38);
 
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -122,12 +122,10 @@ All colors MUST be HSL.
   }
 
   body {
-    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
-    @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at 5% 5%, hsl(190 87% 68% / 0.13) 0, transparent 24%),
-      radial-gradient(circle at 95% 16%, hsl(217 90% 55% / 0.14) 0, transparent 22%),
-      radial-gradient(circle at 60% 92%, hsl(187 79% 42% / 0.10) 0, transparent 28%);
+    @apply bg-background text-foreground;
+    font-family: "Manrope", "Segoe UI", sans-serif;
+    min-height: 100vh;
+    background-image: var(--gradient-subtle);
     background-attachment: fixed;
   }
 
@@ -135,11 +133,170 @@ All colors MUST be HSL.
   h2,
   h3,
   h4 {
-    font-family: 'Manrope', 'Space Grotesk', sans-serif;
-    letter-spacing: -0.015em;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    letter-spacing: 0.01em;
   }
 
-  .prose :last-child {
-    margin-bottom: 0 !important;
+  code,
+  pre {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  @keyframes sim-think {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes sim-act {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+      filter: saturate(1);
+    }
+    50% {
+      transform: translateY(-1px) scale(1.04);
+      filter: saturate(1.15);
+    }
+  }
+
+  @keyframes board-shake {
+    0% {
+      transform: translate(0, 0);
+    }
+    20% {
+      transform: translate(-1.5px, 0.8px);
+    }
+    40% {
+      transform: translate(1.6px, -1px);
+    }
+    60% {
+      transform: translate(-1.1px, -0.8px);
+    }
+    80% {
+      transform: translate(1.1px, 0.7px);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+
+  @keyframes board-edge-flow {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -9;
+    }
+  }
+
+  @keyframes tile-ping {
+    0% {
+      transform: translate(-50%, -50%) scale(0.55);
+      opacity: 0.92;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes chat-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(12px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes debate-typing {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes judge-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 hsl(var(--primary) / 0);
+    }
+    50% {
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.09);
+    }
+  }
+
+  .board-token-thinking {
+    animation: none;
+  }
+
+  .board-token-acting {
+    animation: none;
+  }
+
+  .board-shake {
+    animation: none;
+  }
+
+  .board-edge-flow {
+    animation: none;
+  }
+
+  .tile-ping {
+    animation: none;
+  }
+
+  .chat-pop {
+    animation: chat-pop 0.42s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  }
+
+  .debate-typing {
+    animation: debate-typing 1.2s ease-in-out infinite;
+  }
+
+  .judge-highlight {
+    animation: judge-glow 2.2s ease-in-out infinite;
+  }
+
+  .sim-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) hsl(var(--background));
+  }
+
+  .sim-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .sim-scroll::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+    border-radius: 999px;
+  }
+
+  .sim-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 2px solid hsl(var(--background));
+  }
+
+  .sim-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 }

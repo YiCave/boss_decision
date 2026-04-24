@@ -24,7 +24,9 @@ backend/
 ├── db.py                         # Supabase client & database service
 ├── main.py                       # FastAPI application & routes
 ├── run.py                        # Development server startup script
-├── requirements.txt              # Python dependencies
+├── pyproject.toml                # uv project metadata + dependencies
+├── uv.lock                       # uv lockfile
+├── requirements.txt              # pip-compatible exported dependencies
 ├── .env.example                  # Environment variables template
 ├── .gitignore                    # Git ignore patterns
 └── README.md                     # Backend documentation
@@ -48,6 +50,10 @@ backend/
 
 ```bash
 cd backend
+# Preferred (uv)
+uv sync
+
+# Fallback (pip)
 pip install -r requirements.txt
 ```
 
@@ -316,6 +322,10 @@ Expected flow:
 ### Issue: ModuleNotFoundError
 
 ```bash
+# Preferred (uv)
+uv sync
+
+# Fallback (pip)
 pip install -r requirements.txt
 ```
 

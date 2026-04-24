@@ -1,0 +1,152 @@
+id: pricing_war_v1
+name: Tycoon Crisis Sprint
+map:
+  width: 100
+  height: 100
+  zones:
+    - id: demand_hub
+      name: Demand Hub
+      x: 10
+      y: 10
+      radius: 9
+      effects:
+        revenue: 0.22
+        sentiment: 0.12
+        churn_risk: 0.04
+    - id: campus_square
+      name: Campus Square
+      x: 30
+      y: 10
+      radius: 9
+      effects:
+        revenue: 0.15
+        sentiment: 0.2
+        margin: -0.06
+    - id: digital_blast
+      name: Digital Blast
+      x: 50
+      y: 10
+      radius: 9
+      effects:
+        revenue: 0.26
+        margin: -0.1
+        churn_risk: 0.06
+    - id: retail_lane
+      name: Retail Lane
+      x: 70
+      y: 10
+      radius: 9
+      effects:
+        revenue: 0.18
+        margin: 0.09
+    - id: promo_stage
+      name: Promo Stage
+      x: 90
+      y: 30
+      radius: 9
+      effects:
+        sentiment: 0.22
+        margin: -0.16
+    - id: supply_yard
+      name: Supply Yard
+      x: 90
+      y: 50
+      radius: 9
+      effects:
+        margin: 0.24
+        revenue: 0.08
+    - id: finance_tower
+      name: Finance Tower
+      x: 90
+      y: 70
+      radius: 9
+      effects:
+        margin: 0.2
+        churn_risk: -0.05
+    - id: brand_garden
+      name: Brand Garden
+      x: 70
+      y: 90
+      radius: 9
+      effects:
+        sentiment: 0.28
+        revenue: 0.1
+    - id: competitor_radar
+      name: Competitor Radar
+      x: 50
+      y: 90
+      radius: 9
+      effects:
+        churn_risk: -0.12
+        margin: -0.03
+    - id: compliance_gate
+      name: Compliance Gate
+      x: 30
+      y: 90
+      radius: 9
+      effects:
+        churn_risk: -0.18
+        revenue: -0.03
+    - id: loyalty_park
+      name: Loyalty Park
+      x: 10
+      y: 90
+      radius: 9
+      effects:
+        sentiment: 0.24
+        churn_risk: -0.08
+    - id: volatility_crossing
+      name: Volatility Crossing
+      x: 10
+      y: 50
+      radius: 9
+      effects:
+        revenue: -0.12
+        churn_risk: 0.22
+game_rules:
+  crisis_trigger_chance: 0.28
+  daily_base_points: 0.9
+  move_points_per_step: 0.08
+  intent_points_multiplier: 1.9
+  kpi_points_multiplier: 0.75
+crisis_cards:
+  - id: rival_discount_war
+    title: Rival Discount War
+    effects:
+      revenue: -0.35
+      churn_risk: 0.5
+    counter_actions:
+      - campaign
+      - spend_shift
+  - id: supply_shock
+    title: Supply Shock
+    effects:
+      margin: -0.48
+      revenue: -0.18
+    counter_actions:
+      - procurement
+  - id: social_backlash
+    title: Social Backlash
+    effects:
+      sentiment: -0.6
+      churn_risk: 0.3
+    counter_actions:
+      - campaign
+  - id: policy_shift
+    title: Policy Shift
+    effects:
+      margin: -0.24
+      churn_risk: 0.2
+    counter_actions:
+      - move
+      - spend_shift
+notes:
+  - 1 tick equals 1 day.
+  - Active personas roll and move to a district each day.
+  - District effects always apply.
+  - Crisis cards may trigger and can be mitigated by counter actions.
+  - Agent points rank strategic contribution over time.
+shared_allowlist:
+  - companies
+  - market
+  - reports

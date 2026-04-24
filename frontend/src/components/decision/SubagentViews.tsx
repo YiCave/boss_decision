@@ -1,4 +1,4 @@
-import { Brain, Shield, Flame } from "lucide-react";
+﻿import { Brain, Shield, Flame } from "lucide-react";
 import { StageCard } from "./StageCard";
 import { SubagentView } from "@/lib/decision-engine";
 import ReactMarkdown from "react-markdown";
@@ -14,7 +14,7 @@ export const SubagentViews = ({ status, views }: Props) => {
     <StageCard
       icon={<Brain className="w-5 h-5" />}
       title="Subagent Perspectives"
-      subtitle="Two minds, two strategies — debating in parallel"
+      subtitle="Two minds, two strategies ΓÇö debating in parallel"
       status={status}
       accent="warning"
     >

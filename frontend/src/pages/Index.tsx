@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Brain, AlertTriangle, FileText } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { InputPanel } from "@/components/decision/InputPanel";
 import { FinalDecision } from "@/components/decision/FinalDecision";
-import { analyzeDecision, AnalysisResult } from "@/lib/decision-engine";
+import { analyzeDecision, AnalysisResult, type ChatMessage } from "@/lib/decision-engine";
 import { getChatBubbleClass, getLabelAccentClass } from "@/lib/agentChatStyles";
 
 const Index = () => {
@@ -100,6 +100,9 @@ const Index = () => {
               <FileText className="w-4 h-4 mr-2" />
               Documents
             </Button>
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/simulators">Labs: simulators and sales demos</Link>
+            </Button>
             <div className="hidden md:flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               Engine online
@@ -179,7 +182,7 @@ const Index = () => {
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                           System
                         </p>
-                        <p className="text-sm text-muted-foreground">Typing…</p>
+                        <p className="text-sm text-muted-foreground">TypingΓÇª</p>
                       </div>
                     )}
                   </div>

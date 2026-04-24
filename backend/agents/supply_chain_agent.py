@@ -1,12 +1,32 @@
 """
-Supply Chain Agent - Evaluates logistics, inventory, and operational delivery risk.
+Supply Chain Agent — combines local knowledge + optional Supabase supply_record reads.
+Used by manager orchestration (docs) and /api/supply-chain/* (inventory checks).
 """
-from typing import Dict, List, Any
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
 
 from .base_agent import BaseAgent, AgentInsight
 
+logger = logging.getLogger(__name__)
+
 
 class SupplyChainAgent(BaseAgent):
+    """
+    Operational + inventory domain agent.
+    - Local: department documents (supply_chain, operations)
+    - Supabase: supply_record when company_db is set and supply_id is in context
+    """
+
+    LOW_INVENTORY_THRESHOLD = 1000
+
+    def __init__(self, knowledge: Any, company_db: Optional[Any] = None, llm=None):
+        super().__init__(knowledge, llm)
+        self._company_db = company_db
+        if company_db is not None:
+            logger.info("SupplyChainAgent: Supabase supply_record reads enabled")
+
     async def retrieve_evidence(self, query: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         evidence: List[Dict[str, Any]] = []
 
@@ -33,14 +53,28 @@ class SupplyChainAgent(BaseAgent):
                 }
             )
 
+        supply_id = context.get("supply_id")
+        if not supply_id and context.get("target_type") in {"supply", "supply_record"}:
+            supply_id = context.get("target_id")
+
+        if self._company_db is not None and supply_id:
+            try:
+                supply_record = await self._company_db.get_supply_record(int(supply_id))
+                if supply_record:
+                    evidence.append(
+                        {
+                            "source": "supply_record",
+                            "type": "inventory",
+                            "record_id": supply_record.get("supply_id"),
+                            "data": supply_record,
+                        }
+                    )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("SupplyChain: get_supply_record failed: %s", exc)
+
         return evidence
 
-    # ------------------------------------------------------------------
-    # Rule-based core analysis
-    # ------------------------------------------------------------------
-
-    def _rule_based_analyze(self, evidence: List[Dict[str, Any]], query: str) -> AgentInsight:
-        """Produce structured insights from pure rule-based logic."""
+    def _rule_based_from_docs(self, evidence: List[Dict[str, Any]], query: str) -> AgentInsight:
         findings: List[str] = []
         risks: List[str] = []
 
@@ -89,10 +123,59 @@ class SupplyChainAgent(BaseAgent):
             evidence_used=evidence,
         )
 
-    async def analyze(self, evidence: List[Dict[str, Any]], query: str) -> AgentInsight:
-        """Analyze supply chain evidence using rule-based logic enhanced by LLM."""
-        fallback = self._rule_based_analyze(evidence, query)
+    def _analyze_supply_record_row(
+        self, record: Dict[str, Any], evidence: List[Dict[str, Any]]
+    ) -> AgentInsight:
+        item_name = record.get("item_name", "Unknown item")
+        supplier_name = record.get("supplier_name") or "Unknown supplier"
+        inventory_level = record.get("inventory_level")
+        unit_cost = record.get("unit_cost")
 
+        findings = [
+            f"Supply item: {item_name}",
+            f"Current inventory level: {inventory_level}",
+            f"Supplier: {supplier_name}",
+            (
+                f"Unit price per item: RM {unit_cost:,.2f}"
+                if unit_cost is not None
+                else "Unit price per item: Not available"
+            ),
+        ]
+        risks: List[str] = []
+
+        if inventory_level is None:
+            risks.append("Inventory level is missing; restock trigger cannot be evaluated reliably")
+            recommendation = "Verify inventory tracking data before taking procurement action"
+            confidence = 0.6
+        elif inventory_level < self.LOW_INVENTORY_THRESHOLD:
+            risks.append(
+                f"Low inventory detected: {inventory_level} is below threshold {self.LOW_INVENTORY_THRESHOLD}"
+            )
+            recommendation = (
+                f"Trigger restock notification for {item_name} and coordinate replenishment with {supplier_name}"
+            )
+            confidence = 0.92
+        else:
+            recommendation = f"Inventory is sufficient for {item_name}; restock notification not required"
+            confidence = 0.9
+
+        return AgentInsight(
+            agent_name="SupplyChain",
+            findings=findings,
+            risks=risks,
+            recommendation=recommendation,
+            confidence=confidence,
+            evidence_used=evidence,
+        )
+
+    async def analyze(self, evidence: List[Dict[str, Any]], query: str) -> AgentInsight:
+        supply_rows = [e for e in evidence if e.get("source") == "supply_record"]
+        if supply_rows and evidence and all(
+            (e.get("source") == "supply_record") for e in evidence
+        ):
+            return self._analyze_supply_record_row(supply_rows[0]["data"], evidence)
+
+        fallback = self._rule_based_from_docs(evidence, query)
         evidence_parts: List[str] = []
         for e in evidence:
             summary = e.get("summary", "")

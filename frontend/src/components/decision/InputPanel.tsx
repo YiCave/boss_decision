@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2, Upload, FileText, X, Users, Settings2 } from "lucide-react";
@@ -25,11 +25,11 @@ const SAMPLE_QUERIES = [
 ];
 
 const AVAILABLE_AGENTS = [
-  { id: "hr", name: "HR", icon: "👤" },
-  { id: "sales", name: "Sales", icon: "📈" },
-  { id: "legal", name: "Legal", icon: "⚖️" },
-  { id: "marketing", name: "Marketing", icon: "📢" },
-  { id: "supply_chain", name: "Supply Chain", icon: "📦" },
+  { id: "hr", name: "HR", icon: "≡ƒæñ" },
+  { id: "sales", name: "Sales", icon: "≡ƒôê" },
+  { id: "legal", name: "Legal", icon: "ΓÜû∩╕Å" },
+  { id: "marketing", name: "Marketing", icon: "≡ƒôó" },
+  { id: "supply_chain", name: "Supply Chain", icon: "≡ƒôª" },
 ];
 
 export const InputPanel = ({ onAnalyze, isAnalyzing }: InputPanelProps) => {
@@ -222,7 +222,7 @@ export const InputPanel = ({ onAnalyze, isAnalyzing }: InputPanelProps) => {
         {isAnalyzing ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Analyzing…
+            AnalyzingΓÇª
           </>
         ) : (
           <>

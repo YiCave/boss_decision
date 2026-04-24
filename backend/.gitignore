@@ -36,3 +36,5 @@ build/
 
 # Local knowledge workspace (uploads, runtime files)
 workplaces/
+# Simulator / network runs (feature/salesAgent)
+runs/

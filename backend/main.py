@@ -1,19 +1,22 @@
-"""
+﻿"""
 Main FastAPI application for AI Boss Decision Engine.
 Multi-agent decision support system with LangChain integration.
 """
-from pathlib import Path
+import asyncio
 import json
-import tempfile
 import os
+import sys
+import tempfile
 from datetime import datetime
-
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 import uvicorn
 import logging
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +27,8 @@ from db import DatabaseService
 from services.local_knowledge_service import LocalKnowledgeService
 from services.manager_document_ingestor import ManagerDocumentIngestor
 from services.llm_client import UnifiedLLMClient
+from services.sales_campaign_service import SalesCampaignService
+from services.sales_supply_debate_service import SalesSupplyDebateService
 from agents import (
     HRAgent,
     SalesAgent,
@@ -66,7 +71,7 @@ sales_agent = SalesAgent(knowledge, company_db=db)
 legal_agent = LegalAgent(knowledge, company_db=db)
 finance_agent = FinanceAgent(knowledge, company_db=db)
 marketing_agent = MarketingAgent(knowledge, company_db=db)
-supply_chain_agent = SupplyChainAgent(knowledge)
+supply_chain_agent = SupplyChainAgent(knowledge, company_db=db)
 manager_agent = ManagerAgent([
     hr_agent,
     sales_agent,
@@ -106,6 +111,161 @@ class EmployeeResponse(BaseModel):
     sales_records: List[Dict[str, Any]]
 
 
+# --- Simulator / sales feature branch (separate UI routes on frontend) ---
+class SimulatorRequest(BaseModel):
+    """Request model for simulator graph execution."""
+
+    query: str
+    structured_data: Optional[dict[str, Any]] = None
+    documents: Optional[list[str]] = None
+    business_context: Optional[dict[str, Any]] = None
+
+
+class SalesCampaignRequest(BaseModel):
+    """Request model for Tavily-powered sales campaign suggestions."""
+
+    product: str = Field(..., min_length=2, max_length=120)
+    region: Optional[str] = Field(default="Malaysia", max_length=80)
+
+
+class DeepSimulatorRequest(BaseModel):
+    """Request model for deep 2D simulator execution."""
+
+    query: str
+    max_ticks: int = 5
+    seed: Optional[int] = None
+    scenario_id: str = "pricing_war_v1"
+    min_personas: int = 3
+    max_personas: int = 6
+    summary_cadence_ticks: int = 7
+
+
+class NetworkSimulatorRequest(BaseModel):
+    """Request model for network simulation execution."""
+
+    query: str
+    max_ticks: int = 16
+    seed: Optional[int] = None
+    min_nodes: int = 15
+    max_nodes: int = 30
+    scenario_id: str = "business_network_v1"
+    allow_internet: bool = True
+    data_context_path: Optional[str] = None
+
+
+class NetworkShockRequest(BaseModel):
+    """Request model for shock injection into an active network session."""
+
+    shock_type: str
+    summary: str
+    severity: float
+    targets: List[str] = Field(default_factory=list)
+
+
+class ObserverChatRequest(BaseModel):
+    """Request model for post-run observer chat."""
+
+    question: str
+
+
+class SalesSupplyDebateRequest(BaseModel):
+    """Request model for sales-vs-supply debate simulator."""
+
+    item_name: Optional[str] = None
+    max_rounds: int = Field(default=4, ge=1, le=10)
+
+
+def _ensure_simulator_import_path() -> None:
+    simulator_root = Path(__file__).resolve().parent / "simulator_agent"
+    simulator_root_str = str(simulator_root)
+    if simulator_root_str not in sys.path:
+        sys.path.insert(0, simulator_root_str)
+
+
+def _get_simulator_agent():
+    _ensure_simulator_import_path()
+    from simulator_agent.src import agent as simulator_agent
+
+    return simulator_agent
+
+
+def _ensure_deep_simulator_import_path() -> None:
+    backend_root = Path(__file__).resolve().parent
+    backend_root_str = str(backend_root)
+    if backend_root_str not in sys.path:
+        sys.path.insert(0, backend_root_str)
+
+
+def _get_deep_simulator_agent():
+    _ensure_deep_simulator_import_path()
+    from deep_simulation_agent.src import agent as deep_simulator_agent
+
+    return deep_simulator_agent
+
+
+def _ensure_network_simulator_import_path() -> None:
+    backend_root = Path(__file__).resolve().parent
+    backend_root_str = str(backend_root)
+    if backend_root_str not in sys.path:
+        sys.path.insert(0, backend_root_str)
+
+
+def _get_network_simulator_agent():
+    _ensure_network_simulator_import_path()
+    from network_simulation_agent.src import agent as network_simulator_agent
+
+    return network_simulator_agent
+
+
+def _build_simulator_initial_state(request: SimulatorRequest) -> dict[str, Any]:
+    return {
+        "query": request.query,
+        "structured_data": request.structured_data or {},
+        "documents": request.documents or [],
+        "business_context": request.business_context or {},
+        "persona_results": [],
+        "persona_stream_events": [],
+        "scenario_branches": [],
+    }
+
+
+def _build_deep_simulator_initial_state(request: DeepSimulatorRequest) -> dict[str, Any]:
+    return {
+        "query": request.query,
+        "max_ticks": request.max_ticks,
+        "seed": request.seed,
+        "scenario_id": request.scenario_id,
+        "min_personas": request.min_personas,
+        "max_personas": request.max_personas,
+        "summary_cadence_ticks": request.summary_cadence_ticks,
+    }
+
+
+def _build_network_simulator_initial_state(request: NetworkSimulatorRequest) -> dict[str, Any]:
+    return {
+        "query": request.query,
+        "max_ticks": request.max_ticks,
+        "seed": request.seed,
+        "min_nodes": request.min_nodes,
+        "max_nodes": request.max_nodes,
+        "scenario_id": request.scenario_id,
+        "allow_internet": request.allow_internet,
+        "data_context_path": request.data_context_path,
+    }
+
+
+def _ndjson_line(payload: dict[str, Any]) -> str:
+    return json.dumps(payload, default=str) + "\n"
+
+
+def _safe_json_payload(data: Any) -> Any:
+    try:
+        json.dumps(data, default=str)
+        return data
+    except Exception:
+        return str(data)
+
+
 # ============================================
 # Routes
 # ============================================
@@ -136,10 +296,17 @@ async def health_check():
         if missing:
             raise RuntimeError(f"Missing required directories: {missing}")
 
+        db_ok = True
+        try:
+            db.client.table("department").select("dept_id").limit(1).execute()
+        except Exception:
+            db_ok = False
+
         return {
             "status": "healthy",
             "storage": "local_filesystem",
-            "workplaces_root": str(knowledge.workplaces_root)
+            "workplaces_root": str(knowledge.workplaces_root),
+            "supabase_probe": "ok" if db_ok else "unavailable",
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
@@ -513,7 +680,7 @@ async def upload_document(
                 
                 # If no entities, show full extraction JSON for debugging
                 if len(extraction_json.get('entities', [])) == 0:
-                    print(f"         ⚠️  WARNING: No entities found!")
+                    print(f"         ΓÜá∩╕Å  WARNING: No entities found!")
                     print(f"         Full extraction JSON:")
                     import json
                     print(f"         {json.dumps(extraction_json, indent=10)[:1000]}")
@@ -782,6 +949,379 @@ async def delete_document(source_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete document: {str(e)}")
+
+
+# --- Routes from feature/salesAgent: campaign, simulators, supply APIs, debate (separate frontend pages) ---
+
+
+@app.post("/api/sales/campaign-suggestions")
+async def get_sales_campaign_suggestions(request: SalesCampaignRequest):
+    """
+    Suggest campaign/event ideas for the next week based on Tavily news search.
+    """
+    product = request.product.strip()
+    region = (request.region or "Malaysia").strip() or "Malaysia"
+
+    if len(product) < 2:
+        raise HTTPException(status_code=422, detail="Product name must be at least 2 characters")
+
+    if not settings.tavily_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="TAVILY_API_KEY is not configured. Add it to backend/.env first.",
+        )
+
+    service = SalesCampaignService(settings.tavily_api_key)
+
+    try:
+        result = await service.suggest_campaigns(product=product, region=region)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sales suggestion failed: {str(e)}")
+
+
+@app.post("/api/simulator/run")
+async def run_simulator(request: SimulatorRequest):
+    """
+    Execute simulator graph and return final result in one response.
+    """
+    try:
+        simulator_agent = _get_simulator_agent()
+        initial_state = _build_simulator_initial_state(request)
+        result = await asyncio.to_thread(simulator_agent.invoke, initial_state)
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Simulator run failed: {str(e)}")
+
+
+@app.post("/api/simulator/stream")
+async def stream_simulator(request: SimulatorRequest):
+    """
+    Stream simulator updates and tokens as NDJSON.
+    """
+    simulator_agent = _get_simulator_agent()
+    initial_state = _build_simulator_initial_state(request)
+
+    async def event_stream():
+        latest_values: dict[str, Any] | None = None
+        try:
+            yield _ndjson_line({"type": "status", "message": "Simulator stream started."})
+            async for part in simulator_agent.astream(
+                initial_state,
+                stream_mode=["updates", "values", "custom"],
+                version="v2",
+            ):
+                part_type = part.get("type")
+                if part_type == "updates":
+                    updates = part.get("data", {})
+                    nodes = list(updates.keys()) if isinstance(updates, dict) else []
+                    if nodes:
+                        yield _ndjson_line(
+                            {
+                                "type": "update",
+                                "nodes": nodes,
+                                "updates": _safe_json_payload(updates),
+                            }
+                        )
+                elif part_type == "values":
+                    values = part.get("data")
+                    if isinstance(values, dict):
+                        latest_values = values
+                elif part_type == "custom":
+                    custom_data = part.get("data")
+                    if isinstance(custom_data, dict):
+                        yield _ndjson_line(
+                            {
+                                "type": "custom",
+                                "event": custom_data.get("event"),
+                                "data": _safe_json_payload(custom_data),
+                            }
+                        )
+
+            if latest_values is not None:
+                yield _ndjson_line(
+                    {"type": "final", "response": latest_values.get("response"), "state": latest_values}
+                )
+            else:
+                yield _ndjson_line({"type": "final", "response": "Simulation completed."})
+        except Exception as e:
+            yield _ndjson_line({"type": "error", "error": str(e)})
+        finally:
+            yield _ndjson_line({"type": "done"})
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+
+@app.get("/api/supply-chain/{supply_id}/availability")
+async def get_supply_chain_availability(supply_id: int):
+    """
+    Check a supply record by supply_id and trigger low-inventory notification.
+    """
+    try:
+        insight = await supply_chain_agent.run(
+            query="Check supply availability and restock risk",
+            context={"supply_id": supply_id, "target_type": "supply_record"},
+        )
+
+        if not insight.evidence_used:
+            raise HTTPException(status_code=404, detail=f"Supply record {supply_id} not found")
+
+        record = insight.evidence_used[0]["data"]
+        threshold = SupplyChainAgent.LOW_INVENTORY_THRESHOLD
+        inventory_level = record.get("inventory_level")
+        supplier_name = record.get("supplier_name")
+        item_name = record.get("item_name")
+        unit_cost = record.get("unit_cost")
+
+        is_low_inventory = (
+            isinstance(inventory_level, (int, float)) and inventory_level < threshold
+        )
+
+        notification = {
+            "triggered": is_low_inventory,
+            "message": (
+                f"Restock required for ongoing finish item '{item_name}'. "
+                f"Supplier: {supplier_name}. Unit price: RM {float(unit_cost):,.2f}. "
+                f"Inventory available: {inventory_level} (threshold: {threshold})."
+                if is_low_inventory
+                else "Inventory level is sufficient. Restock notification not triggered."
+            ),
+            "item_name": item_name,
+            "supplier_name": supplier_name,
+            "unit_price_per_unit": float(unit_cost) if unit_cost is not None else None,
+            "inventory_available": inventory_level,
+            "threshold": threshold,
+        }
+
+        return {
+            "supply_id": supply_id,
+            "availability": {
+                "item_name": item_name,
+                "supplier_name": supplier_name,
+                "inventory_available": inventory_level,
+                "unit_price_per_unit": float(unit_cost) if unit_cost is not None else None,
+            },
+            "notification": notification,
+            "agent_insight": insight.model_dump(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Supply-chain availability check failed: {str(e)}")
+
+
+@app.get("/api/supply-chain/availability")
+async def get_all_supply_chain_availability():
+    """
+    Retrieve all supply records and evaluate inventory threshold notification.
+    """
+    try:
+        threshold = SupplyChainAgent.LOW_INVENTORY_THRESHOLD
+        records = await db.get_all_supply_records()
+
+        evaluations = []
+        low_inventory_count = 0
+
+        for record in records:
+            inventory_level = record.get("inventory_level")
+            supplier_name = record.get("supplier_name")
+            item_name = record.get("item_name")
+            unit_cost = record.get("unit_cost")
+            supply_rid = record.get("supply_id")
+
+            is_low_inventory = (
+                isinstance(inventory_level, (int, float)) and inventory_level < threshold
+            )
+            if is_low_inventory:
+                low_inventory_count += 1
+
+            evaluations.append(
+                {
+                    "supply_id": supply_rid,
+                    "item_name": item_name,
+                    "supplier_name": supplier_name,
+                    "inventory_available": inventory_level,
+                    "unit_price_per_unit": float(unit_cost) if unit_cost is not None else None,
+                    "notification": {
+                        "triggered": is_low_inventory,
+                        "message": (
+                            f"Restock required for ongoing finish item '{item_name}'. "
+                            f"Supplier: {supplier_name}. Unit price: RM {float(unit_cost):,.2f}. "
+                            f"Inventory available: {inventory_level} (threshold: {threshold})."
+                            if is_low_inventory
+                            else "Inventory level is sufficient. Restock notification not triggered."
+                        ),
+                        "threshold": threshold,
+                    },
+                }
+            )
+
+        return {
+            "threshold": threshold,
+            "total_records": len(evaluations),
+            "low_inventory_records": low_inventory_count,
+            "records": evaluations,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Supply-chain availability list check failed: {str(e)}")
+
+
+@app.post("/api/deep-simulator/run")
+async def run_deep_simulator(request: DeepSimulatorRequest):
+    """
+    Execute deep 2D simulator and return final result in one response.
+    """
+    try:
+        deep_simulator_agent = _get_deep_simulator_agent()
+        initial_state = _build_deep_simulator_initial_state(request)
+        result = await asyncio.to_thread(deep_simulator_agent.invoke, initial_state)
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Deep simulator run failed: {str(e)}")
+
+
+@app.post("/api/deep-simulator/stream")
+async def stream_deep_simulator(request: DeepSimulatorRequest):
+    """
+    Stream deep simulator world updates and subagent chunks as NDJSON.
+    """
+    deep_simulator_agent = _get_deep_simulator_agent()
+    initial_state = _build_deep_simulator_initial_state(request)
+
+    async def event_stream():
+        try:
+            async for event in deep_simulator_agent.astream(initial_state):
+                yield _ndjson_line(_safe_json_payload(event))
+        except Exception as e:
+            yield _ndjson_line({"type": "error", "error": str(e)})
+            yield _ndjson_line({"type": "done"})
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+
+@app.post("/api/network-simulator/run")
+async def run_network_simulator(request: NetworkSimulatorRequest):
+    """
+    Execute network simulation and return final response in one payload.
+    """
+    try:
+        network_simulator_agent = _get_network_simulator_agent()
+        initial_state = _build_network_simulator_initial_state(request)
+        result = await asyncio.to_thread(network_simulator_agent.invoke, initial_state)
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Network simulator run failed: {str(e)}")
+
+
+@app.post("/api/simulator/sales-supply-debate")
+async def run_sales_supply_debate_simulator(request: SalesSupplyDebateRequest):
+    """
+    Simulate a debate loop between Sales agent (AI-1) and Supply Chain agent (AI-2)
+    based on supply_record.item_name and inventory constraints.
+    """
+    try:
+        service = SalesSupplyDebateService(db)
+        result = await service.run(
+            max_rounds=request.max_rounds,
+            item_name=request.item_name,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sales-supply debate simulation failed: {str(e)}")
+
+
+@app.post("/api/network-simulator/stream")
+async def stream_network_simulator(request: NetworkSimulatorRequest):
+    """
+    Stream network simulation events as NDJSON.
+    """
+    network_simulator_agent = _get_network_simulator_agent()
+    initial_state = _build_network_simulator_initial_state(request)
+
+    async def event_stream():
+        try:
+            async for event in network_simulator_agent.astream(initial_state):
+                yield _ndjson_line(_safe_json_payload(event))
+        except Exception as e:
+            yield _ndjson_line({"type": "error", "error": str(e)})
+            yield _ndjson_line({"type": "done"})
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+
+@app.post("/api/network-simulator/{session_id}/shock")
+async def add_network_simulator_shock(session_id: str, request: NetworkShockRequest):
+    """
+    Queue shock event for the next stream tick of the given session.
+    """
+    try:
+        _ensure_network_simulator_import_path()
+        from network_simulation_agent.src.engine import SESSION_STORE
+        from network_simulation_agent.src.schema import ShockEvent
+
+        shock = ShockEvent(
+            shock_type=request.shock_type,
+            summary=request.summary,
+            severity=request.severity,
+            targets=request.targets,
+        )
+        SESSION_STORE.queue_shock(session_id, shock)
+        return {"status": "ok", "session_id": session_id, "queued_shock": shock.model_dump(mode="json")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to queue shock: {str(e)}")
+
+
+@app.post("/api/network-simulator/{session_id}/observer-chat")
+async def network_simulator_observer_chat(session_id: str, request: ObserverChatRequest):
+    """
+    Return observer answer grounded to persisted session artifacts.
+    """
+    try:
+        _ensure_network_simulator_import_path()
+        from network_simulation_agent.src.engine import SESSION_STORE
+        from network_simulation_agent.src.observer import build_observer_answer
+
+        summary = SESSION_STORE.get_observer_report(session_id)
+        backend_root = Path(__file__).resolve().parent
+        base_dir = backend_root / "network_simulation_agent"
+        response = build_observer_answer(
+            base_dir=base_dir,
+            session_id=session_id,
+            question=request.question,
+            summary=summary or "",
+        )
+        return {"status": "ok", "session_id": session_id, **response}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Observer chat failed: {str(e)}")
+
+
+@app.get("/api/network-simulator/{session_id}/storyline")
+async def download_network_simulator_storyline(session_id: str):
+    """
+    Download final storyline markdown artifact for a completed network simulation session.
+    """
+    try:
+        _ensure_network_simulator_import_path()
+        from network_simulation_agent.src.observer import storyline_path
+
+        backend_root = Path(__file__).resolve().parent
+        base_dir = backend_root / "network_simulation_agent"
+        target = storyline_path(base_dir=base_dir, session_id=session_id)
+        if not target.exists():
+            raise HTTPException(status_code=404, detail="Storyline artifact not found for this session.")
+        return FileResponse(
+            path=target,
+            filename=f"{session_id}_storyline.md",
+            media_type="text/markdown; charset=utf-8",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Storyline download failed: {str(e)}")
 
 
 # ============================================

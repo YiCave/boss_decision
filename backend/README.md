@@ -7,6 +7,10 @@ Backend API for the multi-agent decision engine. **Python + FastAPI + LangChain*
 ```bash
 # 1. Install dependencies
 cd backend
+# Preferred (uv)
+uv sync
+
+# Fallback (pip)
 pip install -r requirements.txt
 
 # 2. Setup environment
@@ -137,7 +141,8 @@ npm install --save-dev nodemon typescript @types/express
 ### Option B: Python + FastAPI
 
 ```bash
-pip install fastapi uvicorn supabase python-dotenv
+uv add fastapi "uvicorn[standard]" supabase python-dotenv
+# pip fallback: pip install fastapi uvicorn supabase python-dotenv
 ```
 
 **Pros**:
@@ -167,7 +172,7 @@ pip install fastapi uvicorn supabase python-dotenv
    │   ├── services/       # Database queries
    │   └── utils/          # Helpers
    ├── .env
-   └── package.json (or requirements.txt)
+   └── package.json (or pyproject.toml + requirements.txt)
    ```
 3. **Implement Supabase connection**:
    - Connection pooling
@@ -318,7 +323,8 @@ ORDER BY total_revenue DESC;
    npm install express @supabase/supabase-js dotenv cors
    
    # If Python
-   pip install fastapi uvicorn supabase python-dotenv
+   uv add fastapi "uvicorn[standard]" supabase python-dotenv
+   # pip fallback: pip install fastapi uvicorn supabase python-dotenv
    ```
 3. **Create first endpoint**: `/api/employees/:id`
 4. **Test Supabase connection**

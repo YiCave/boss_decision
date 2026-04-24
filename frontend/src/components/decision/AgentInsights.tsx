@@ -1,4 +1,4 @@
-import { Bot } from "lucide-react";
+﻿import { Bot } from "lucide-react";
 import { StageCard } from "./StageCard";
 import { AgentInsight } from "@/lib/decision-engine";
 import ReactMarkdown from "react-markdown";
