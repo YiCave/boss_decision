@@ -10,7 +10,7 @@ const NetworkSimulationLive = () => {
       <div className="pointer-events-none absolute inset-0 opacity-10 [background-image:linear-gradient(to_right,rgba(28,28,28,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(28,28,28,0.2)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
-        <div className="container max-w-[1400px] py-4 flex items-center justify-between">
+        <div className="container mx-auto max-w-[1400px] py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Brain className="w-5 h-5 text-primary-foreground" />

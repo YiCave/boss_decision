@@ -71,7 +71,7 @@ const SalesAgent = () => {
       <div className="pointer-events-none absolute -right-20 top-12 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
 
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
-        <div className="container max-w-7xl py-4 flex items-center justify-between">
+        <div className="container mx-auto max-w-7xl py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Brain className="w-5 h-5 text-primary-foreground" />
@@ -91,7 +91,7 @@ const SalesAgent = () => {
         </div>
       </header>
 
-      <main className="container max-w-7xl py-10">
+      <main className="container mx-auto max-w-7xl py-10">
         <section className="relative overflow-hidden rounded-[2rem] border border-border bg-card/75 p-6 shadow-card md:p-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_4%,hsl(var(--primary)/0.18),transparent_36%)]" />
           <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">

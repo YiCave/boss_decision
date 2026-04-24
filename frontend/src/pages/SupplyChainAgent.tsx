@@ -62,7 +62,7 @@ const SupplyChainAgent = () => {
       <div className="pointer-events-none absolute -right-20 top-20 h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
 
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
-        <div className="container max-w-7xl py-4 flex items-center justify-between">
+        <div className="container mx-auto max-w-7xl py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Brain className="w-5 h-5 text-primary-foreground" />
@@ -82,7 +82,7 @@ const SupplyChainAgent = () => {
         </div>
       </header>
 
-      <main className="container max-w-7xl py-10">
+      <main className="container mx-auto max-w-7xl py-10">
         <Card className="border-border/80 bg-card/85">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl">
