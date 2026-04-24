@@ -65,32 +65,6 @@ const SimulatorsHub = () => {
       </header>
 
       <main className="container max-w-[1400px] py-6 space-y-6">
-        <section className="rounded-2xl border border-border bg-card/70 p-4 text-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-            Agent demos (separate UIs from main decision engine)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              className="rounded-lg border border-border px-3 py-1.5 hover:bg-muted/60"
-              to="/agents/sales"
-            >
-              Sales agent
-            </Link>
-            <Link
-              className="rounded-lg border border-border px-3 py-1.5 hover:bg-muted/60"
-              to="/agents/supply-chain"
-            >
-              Supply chain agent
-            </Link>
-            <Link
-              className="rounded-lg border border-border px-3 py-1.5 hover:bg-muted/60"
-              to="/simulation-sales-supply-debate"
-            >
-              Sales vs supply debate
-            </Link>
-          </div>
-        </section>
-
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="h-auto w-full flex-wrap gap-2 rounded-2xl border border-border bg-card/80 p-2 text-foreground">
             {tabItems.map((tab) => {

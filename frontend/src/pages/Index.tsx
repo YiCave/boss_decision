@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Brain, AlertTriangle, FileText } from "lucide-react";
+import { Brain, AlertTriangle, FileText, MessageSquare, Package, TrendingUp } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
@@ -76,38 +76,71 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle flex flex-col items-center">
       <header className="border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-10 w-full">
-        <div className="container max-w-7xl px-4 md:px-6 py-4 flex items-center justify-between mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Brain className="w-5 h-5 text-primary-foreground" />
+        <div className="container max-w-7xl px-4 md:px-6 py-4 mx-auto flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
+                <Brain className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground leading-tight">
+                  AI Decision Engine
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  #manager-orchestrator · group-chat orchestration view
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground leading-tight">
-                AI Decision Engine
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                #manager-orchestrator · group-chat orchestration view
-              </p>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/documents")}
+                className="bg-gradient-to-r from-orange-400 to-orange-600 text-white border-0 hover:from-orange-500 hover:to-orange-700 shadow-md"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Documents
+              </Button>
+              <Button variant="secondary" size="sm" asChild>
+                <Link to="/simulators">Simulators</Link>
+              </Button>
+              <div className="hidden md:flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                Engine online
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/documents")}
-              className="bg-gradient-to-r from-orange-400 to-orange-600 text-white border-0 hover:from-orange-500 hover:to-orange-700 shadow-md"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Documents
-            </Button>
-            <Button variant="secondary" size="sm" asChild>
-              <Link to="/simulators">Labs: simulators and sales demos</Link>
-            </Button>
-            <div className="hidden md:flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              Engine online
+          <nav
+            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-1 border-t border-border/60"
+            aria-label="Sales and supply tools"
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+              {"Sales & supply"}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="h-8" asChild>
+                <Link to="/agents/sales" className="inline-flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Sales agent
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" className="h-8" asChild>
+                <Link to="/agents/supply-chain" className="inline-flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5" />
+                  Supply chain
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" className="h-8" asChild>
+                <Link
+                  to="/simulation-sales-supply-debate"
+                  className="inline-flex items-center gap-1.5"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  Sales vs supply debate
+                </Link>
+              </Button>
             </div>
-          </div>
+          </nav>
         </div>
       </header>
 
