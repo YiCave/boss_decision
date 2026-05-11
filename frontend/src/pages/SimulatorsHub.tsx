@@ -44,7 +44,7 @@ const SimulatorsHub = () => {
       <div className="pointer-events-none absolute inset-0 opacity-10 [background-image:linear-gradient(to_right,rgba(28,28,28,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(28,28,28,0.2)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
-        <div className="container max-w-[1400px] py-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="container mx-auto max-w-[1400px] py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Brain className="w-5 h-5 text-primary-foreground" />
@@ -64,9 +64,7 @@ const SimulatorsHub = () => {
         </div>
       </header>
 
-      <main className="container max-w-[1400px] py-6 space-y-6">
-
-
+      <main className="container mx-auto max-w-[1400px] py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="h-auto w-full flex-wrap gap-2 rounded-2xl border border-border bg-card/80 p-2 text-foreground">
             {tabItems.map((tab) => {

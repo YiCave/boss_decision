@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_NETWORK_MODEL = "google_genai:gemini-3.1-flash-lite-preview"
+DEFAULT_NETWORK_MODEL = "openai:ilmu-glm-5.1"
 _MODEL_CACHE: dict[str, Any] = {}
 _MODEL_INIT_ATTEMPTS: set[str] = set()
 
@@ -31,6 +31,13 @@ def _load_env() -> None:
     if google_key and not os.getenv("GEMINI_API_KEY"):
         os.environ["GEMINI_API_KEY"] = google_key
 
+    zhipu_key = os.getenv("ZHIPU_API_KEY")
+    if zhipu_key and not os.getenv("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = zhipu_key
+    zhipu_base_url = os.getenv("ZHIPU_BASE_URL")
+    if zhipu_base_url and not os.getenv("OPENAI_BASE_URL"):
+        os.environ["OPENAI_BASE_URL"] = zhipu_base_url
+
 
 def _infer_default_model() -> str:
     """Infer a model identifier from available provider credentials."""
@@ -38,13 +45,14 @@ def _infer_default_model() -> str:
     if os.getenv("NETWORK_SIM_MODEL"):
         return os.getenv("NETWORK_SIM_MODEL", DEFAULT_NETWORK_MODEL)
     if os.getenv("ZHIPU_API_KEY"):
-        zhipu_model = os.getenv("ZHIPU_MODEL") or os.getenv("LLM_MODEL") or "ilmu-glm-5.1"
+        model = os.getenv("ZHIPU_MODEL", "ilmu-glm-5.1")
+        zhipu_model = os.getenv("ZHIPU_MODEL") or os.getenv("LLM_MODEL") or model
         return zhipu_model if ":" in zhipu_model else f"openai:{zhipu_model}"
     if os.getenv("OPENAI_API_KEY"):
-        model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        model = os.getenv("LLM_MODEL", "ilmu-glm-5.1")
         return model if ":" in model else f"openai:{model}"
     if os.getenv("GOOGLE_API_KEY"):
-        return "google_genai:gemini-3.1-flash-lite-preview"
+        return DEFAULT_NETWORK_MODEL
     if os.getenv("ANTHROPIC_API_KEY"):
         return "anthropic:claude-3-5-sonnet-latest"
     return DEFAULT_NETWORK_MODEL

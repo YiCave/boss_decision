@@ -1,6 +1,8 @@
 ﻿import { Brain, Shield, Flame } from "lucide-react";
 import { StageCard } from "./StageCard";
 import { SubagentView } from "@/lib/decision-engine";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Props {
   status: "pending" | "loading" | "done";
@@ -10,40 +12,50 @@ interface Props {
 export const SubagentViews = ({ status, views }: Props) => {
   return (
     <StageCard
-      icon={<Brain className="h-5 w-5" />}
+      icon={<Brain className="w-5 h-5" />}
       title="Subagent Perspectives"
-      subtitle="Two minds, two strategies debating in parallel"
+      subtitle="Two minds, two strategies ΓÇö debating in parallel"
       status={status}
       accent="warning"
     >
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid sm:grid-cols-2 gap-3">
         {views.map((v, i) => {
           const isConservative = v.stance === "conservative";
           return (
             <div
               key={v.stance}
-              className="relative overflow-hidden rounded-xl border-2 p-5 animate-fade-in-up"
+              className="relative rounded-xl border-2 p-5 animate-fade-in-up overflow-hidden"
               style={{
                 animationDelay: `${i * 150}ms`,
                 borderColor: isConservative ? "hsl(var(--conservative))" : "hsl(var(--aggressive))",
-                background: isConservative ? "hsl(var(--conservative) / 0.08)" : "hsl(var(--aggressive) / 0.08)",
+                background: isConservative
+                  ? "hsl(var(--conservative) / 0.05)"
+                  : "hsl(var(--aggressive) / 0.05)",
               }}
             >
-              <div className="mb-3 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                 <div
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-primary-foreground"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground"
                   style={{
-                    background: isConservative ? "hsl(var(--conservative))" : "hsl(var(--aggressive))",
+                    background: isConservative
+                      ? "hsl(var(--conservative))"
+                      : "hsl(var(--aggressive))",
                   }}
                 >
-                  {isConservative ? <Shield className="h-4 w-4" /> : <Flame className="h-4 w-4" />}
+                  {isConservative ? (
+                    <Shield className="w-4 h-4" />
+                  ) : (
+                    <Flame className="w-4 h-4" />
+                  )}
                 </div>
-                <span className="text-sm font-bold uppercase tracking-[0.16em] text-foreground">
+                <span className="text-sm font-bold uppercase tracking-wide text-foreground">
                   {isConservative ? "Conservative" : "Aggressive"}
                 </span>
               </div>
-              <p className="mb-1 text-base font-semibold text-foreground">{v.recommendation}</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">{v.reasoning}</p>
+              <p className="text-base font-semibold text-foreground mb-1">{v.recommendation}</p>
+              <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{v.reasoning}</ReactMarkdown>
+              </div>
             </div>
           );
         })}

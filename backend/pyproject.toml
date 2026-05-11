@@ -11,6 +11,7 @@ dependencies = [
     "httpx",
     "langchain",
     "langchain-community",
+    "langchain-google-genai>=4.2.2",
     "langchain-mcp-adapters>=0.2.2",
     "langchain-openai",
     "openai",

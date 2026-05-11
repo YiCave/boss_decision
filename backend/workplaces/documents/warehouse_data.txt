@@ -1,0 +1,8 @@
+Department: Supply Chain
+Summary: Operations and Warehouse Capacity Report
+
+Warehouse capacity: 70% utilized
+Lead time from supplier: 45 days (up from 20 days)
+Single-source dependency: YES - Supplier A
+Stock on hand: 14 days cover
+Risk: Potential supply disruption risk. Critical path delay detected.

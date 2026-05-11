@@ -1,207 +1,145 @@
 # AI Boss Decision Engine
 
-Multi-agent decision support system for strategic business questions. Uses domain-specialist agents (HR, Sales, Legal, Finance, Marketing, Supply Chain) to analyze company data and produce explainable decisions.
+A full-stack system for **strategic business decisions** and related demos. A FastAPI backend orchestrates domain agents (HR, legal, finance, marketing, sales, supply chain), document ingestion, optional Supabase data, and separate **simulator** and **sales** experiences. A React (Vite + TypeScript) frontend provides the main decision UI, document flows, and standalone pages for simulators, sales campaigns, supply checks, and sales–supply debate.
 
-## Project Overview
+## What this project does
 
-**Goal**: Simulate realistic company decision-making using AI agents that retrieve evidence, debate perspectives, and synthesize a final recommendation.
+- **Decision engine (home)**: User submits a question; the backend runs retrieval and specialist agents (via Zhipu/Ilmu and/or Gemini, depending on path), then returns a structured result with agent insights and a final decision narrative.
+- **Document pipeline**: Uploads (e.g. via Cloudinary) with optional text/image extraction (Gemini in `document_service.py`) and SQL writes via the data-writer path when configured.
+- **Sales and supply (standalone UIs)**: Sales campaign suggestions (Tavily-backed), supply availability views, and a **sales vs supply debate** simulator with judge output.
+- **Simulators (Labs)**: Classic, deep 2D, and network simulation experiences with their own agent stacks and local knowledge under `backend/agent_docs/simulator/`.
 
-**Example queries**:
-- "Should we fire employee John Tan?"
-- "Should we expand to Singapore market?"
-- "Should we acquire BetaCorp?"
+## Tech stack
 
-**Key Features**:
-- **7-stage pipeline**: Data acquisition → OCR → Structuring → Retrieval → Multi-agent reasoning → Manager decision → Explainable output
-- **Entity linking**: Cross-domain data relationships (HR ↔ Sales ↔ Legal)
-- **Evidence tracking**: Every decision shows which records were used
-- **Manager personas**: Conservative vs Aggressive decision strategies
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Router, TanStack Query |
+| Backend | Python 3.9+, FastAPI, Uvicorn |
+| Data | Supabase (PostgreSQL) when `SUPABASE_*` is set; local/chroma for vectors as configured |
+| LLM / search | Google Gemini (API key), Zhipu/Ilmu (OpenAI-compatible), Tavily, optional OpenAI for simulators |
 
-## Repository Structure
+## Repository layout
 
-```
+```text
 boss_decision/
-├── frontend/              # React + Vite + TypeScript UI
-│   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── lib/           # Decision engine (currently mock)
-│   │   └── pages/         # Main app page
+├── README.md                 # This file
+├── frontend/                 # React app (Vite)
+│   ├── src/                  # Pages, components, decision-engine client
 │   ├── package.json
 │   └── vite.config.ts
-│
-├── backend/               # Backend services (to be implemented)
-│   └── database/          # SQLite schema + seed data
-│       ├── schema.sql     # Full database schema
-│       ├── seed.sql       # Sample data (3 companies, 22 employees)
-│       └── README.md      # Database setup instructions
-│
-├── databasestructure.md   # Database design doc
-├── questionstoconsider.md # Architecture + design decisions
-└── README.md              # This file
+├── backend/
+│   ├── main.py               # FastAPI app and routes
+│   ├── run.py                # Dev server (uvicorn)
+│   ├── config.py             # Settings from environment
+│   ├── requirements.txt
+│   ├── agents/               # HR, legal, finance, sales, marketing, supply, manager, simulators
+│   ├── services/             # Document service, data writer, Cloudinary, etc.
+│   ├── database/             # SQL schema and seeds (Supabase/Postgres)
+│   ├── agent_docs/simulator/ # Markdown/CSV/JSON used as simulator knowledge (do not treat as dev docs)
+│   └── test_docs/            # Sample .md test inputs (optional)
+└── (feature branches)        # History may include merged feature branches; see git log
 ```
 
-## Quick Start
+## Prerequisites
 
-### 1. Frontend (UI Demo)
+- **Node.js** 18+ and npm
+- **Python** 3.9+ (3.10+ recommended)
+- **Supabase** project (or compatible Postgres) if you use live database features
+- API keys as needed: **Google AI Studio** (Gemini), **Zhipu/Ilmu**, **Tavily** (sales), **Cloudinary** (document uploads), optional **OpenAI** for simulator model strings
+
+## Setup
+
+### 1. Backend
+
+```bash
+cd backend
+python -m venv venv
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Create `backend/.env` from the template:
+
+```bash
+copy .env.example .env    # Windows
+# cp .env.example .env      # macOS/Linux
+```
+
+Edit `.env` and set at least:
+
+- `GOOGLE_API_KEY` — used for manager/document paths that call Gemini
+- `ZHIPU_API_KEY` and `ZHIPU_BASE_URL` — specialist agents and SQL writer, when you use those features
+- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (or anon + RLS, depending on your setup) if the app should talk to Supabase
+- `TAVILY_API_KEY` — sales campaign API
+- `CLOUDINARY_URL` — document upload pipeline
+
+Start the API:
+
+```bash
+python run.py
+```
+
+Default URL: `http://localhost:8000` (see `PORT` in `.env`). Interactive docs: `http://localhost:8000/docs`.
+
+Sanity check:
+
+```bash
+python -c "import main; print('ok')"
+```
+
+### 2. Frontend
 
 ```bash
 cd frontend
 npm install
+```
+
+If the API is not on the same host/port as the Vite default, set the base URL. Create `frontend/.env` or `frontend/.env.local`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+Start the dev server:
+
+```bash
 npm run dev
 ```
 
-Visit `http://localhost:5173` to see the UI.
+The dev server port is defined in `vite.config.ts` (commonly `8080`). Open the URL shown in the terminal. The main decision UI is `/`; simulators are under `/simulators`, sales at `/agents/sales`, supply at `/agents/supply-chain`, debate at `/simulation-sales-supply-debate`.
 
-**Current state**: UI is fully functional with **mock data**. Enter any question to see the multi-stage reasoning flow.
+### 3. Database (optional but typical for full features)
 
-### 2. Database Setup
+- Apply `backend/database/schema.sql` and `backend/database/seed.sql` in your Supabase SQL editor or `psql`, as appropriate for your environment.
+- Point `SUPABASE_*` and `DATABASE_URL` in `backend/.env` at your project.
+
+## Environment variables (summary)
+
+Full list and comments live in **`backend/.env.example`**. In short:
+
+- **Core**: `PORT`, `APP_NAME`
+- **Supabase/DB**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `DATABASE_URL`
+- **LLM**: `GOOGLE_API_KEY`, `LLM_MODEL`, `LLM_TEMPERATURE`, `ZHIPU_*`, optional `OPENAI_*` and `SIMULATOR_*` / `NETWORK_*` model overrides
+- **Integrations**: `TAVILY_API_KEY`, `CLOUDINARY_URL`
+- **Local knowledge**: `CHROMA_PERSIST_DIRECTORY`, paths under `workplaces/` if your deployment uses them
+
+## Production build (frontend)
 
 ```bash
-cd backend/database
-sqlite3 decision_engine.db < schema.sql
-sqlite3 decision_engine.db < seed.sql
+cd frontend
+npm run build
+npm run preview   # optional local test of the built assets
 ```
 
-See [`backend/database/README.md`](backend/database/README.md) for details.
+## Content files (Markdown)
 
-**Current state**: Schema + seed data ready. **Not yet connected to frontend**.
+The repo may contain many `.md` files under `backend/agent_docs/` and `test_docs/`. Those are **data** for simulators and tests, not duplicate READMEs. Only the **`README.md` in the repository root** is the project documentation file.
 
-### 3. Backend API (Next Step)
+## License and contributions
 
-**Status**: Not yet implemented.
-
-**What's needed**:
-- API server (Express, FastAPI, or similar)
-- Database connection layer
-- Evidence retrieval endpoints
-- Agent orchestration logic
-- OCR pipeline integration (GLM-4V or similar)
-
-See [Task Distribution](#task-distribution) below.
-
-## Architecture (7 Stages)
-
-See [`questionstoconsider.md`](questionstoconsider.md) for full details.
-
-1. **Data Acquisition**: Simulate messy company documents (PDFs, images, CSVs)
-2. **Data Normalization**: OCR → LLM → Structured Markdown
-3. **Data Structuring & Linking**: Entity resolution (cross-table relationships)
-4. **Knowledge Storage & Retrieval**: SQL DB + Vector DB (semantic search)
-5. **Multi-Agent Reasoning**: Domain agents produce structured insights
-6. **Manager Decision Engine**: Aggregate conflicting recommendations → final verdict
-7. **User Interaction**: Chat interface + structured output panels
-
-## Database Schema
-
-See [`databasestructure.md`](databasestructure.md) for entity descriptions.
-
-**Core entities**:
-- `company`, `department`, `employee`
-- `source_document` (OCR tracking)
-
-**Domain records**:
-- `hr_record`, `sales_record`, `finance_record`, `marketing_record`, `supply_record`, `legal_record`
-
-**Decision tracking**:
-- `decision_case` (user queries)
-- `case_evidence` (explainability: which records were used)
-- `decision_output` (final verdict + reasoning)
-
-## Task Distribution (Phase 1)
-
-| Person | Task |
-| --- | --- |
-| **Keith** | Data Agent + database structure + data source + basic UI |
-| **Kai Haung** | AI extraction & classification (OCR → structured data) |
-| **Marcus** | Subagent personas (manager decision strategies) |
-| **Yihao** | Human Resource Agent + Legal Agent |
-| **Jialih** | Sales Agent + Marketing Agent + Supply Chain Agent |
-
-## Tech Stack
-
-### Frontend
-- **Framework**: React 18 + TypeScript
-- **Build**: Vite
-- **Styling**: Tailwind CSS + shadcn/ui
-- **State**: React Query
-- **Routing**: React Router
-
-### Backend (In Progress)
-- **Database**: PostgreSQL (Supabase cloud)
-- **API**: Node.js + Express OR Python + FastAPI (to be implemented)
-- **OCR/LLM**: GLM-4V (Kai Haung's task)
-- **Vector DB**: Chroma OR FAISS (semantic search)
-
-## Development Roadmap
-
-### ✅ Completed
-- [x] Frontend UI with mock data
-- [x] Database schema design
-- [x] Seed data (3 companies, realistic scenarios)
-- [x] Monorepo structure
-
-### 🚧 In Progress
-- [ ] Backend API scaffolding (Keith)
-- [ ] OCR pipeline (Kai Haung)
-- [ ] Manager personas (Marcus)
-- [ ] Agent implementations (Yihao, Jialih)
-
-### 📋 Next Steps
-1. **Create backend API**:
-   - Database connection module
-   - `/api/analyze` endpoint (submit query)
-   - `/api/cases/:id` endpoint (get case + evidence)
-2. **Connect frontend to backend**:
-   - Replace mock `analyze()` in `src/lib/decision-engine.ts`
-   - Add API client (fetch/axios)
-3. **Implement evidence retrieval**:
-   - SQL queries for structured data
-   - Vector search for semantic matching
-4. **Build agent pipeline**:
-   - HR Agent, Sales Agent, Legal Agent, etc.
-   - Manager aggregation logic
-5. **Add OCR pipeline**:
-   - File upload endpoint
-   - PDF/image → structured data extraction
-
-## Demo Scenarios (Pre-loaded)
-
-### Scenario 1: Fire Employee?
-- **Query**: "Should we fire employee John Tan (ID 4)?"
-- **Context**: Underperforming sales exec, 2 consecutive bad reviews
-- **Decision**: "DO NOT FIRE — Initiate 60-day PIP"
-- **Reasoning**: Replacement cost (RM 65k) > savings. PIP preserves optionality.
-
-### Scenario 2: Market Expansion?
-- **Query**: "Should we expand to Singapore market?"
-- **Context**: 3 inbound enterprise leads, setup cost RM 1.8M
-- **Decision**: "EXPAND — Phased entry (remote sales pod first)"
-- **Reasoning**: Demand signals strong but unproven. De-risk with 6-month test.
-
-### Scenario 3: Emergency Procurement?
-- **Query**: "Should we emergency-procure forklift batteries?"
-- **Context**: Critical shortage in 4 weeks, operations downtime risk
-- **Decision**: "APPROVE — Order 30 batteries immediately"
-- **Reasoning**: Downtime cost (RM 400k/week) >> procurement cost (RM 85k).
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make changes
-3. Test locally
-4. Submit PR with description
-
-## Team Communication
-
-- **Design decisions**: See `questionstoconsider.md`
-- **Database changes**: Update `schema.sql` + `seed.sql`, document in PR
-- **Frontend changes**: Follow existing component patterns in `src/components/`
-- **Backend changes**: Document API endpoints in `backend/README.md` (to be created)
-
-## Questions?
-
-See [`questionstoconsider.md`](questionstoconsider.md) for detailed architecture discussions and design rationale.
+Contribute via pull requests; keep feature branches small and document API or schema changes in the PR description. Add or update `backend/.env.example` when you introduce new required settings.
 
 ---
 
-**Hackathon Goal**: Demonstrate a working multi-agent decision system with real data retrieval, explainable reasoning, and a polished UI.
+For API exploration, use the running server’s **OpenAPI** UI at `/docs` once Uvicorn is up.

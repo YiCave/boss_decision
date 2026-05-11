@@ -29,6 +29,70 @@ export interface AnalysisResult {
   agents: AgentInsight[];
   subagents: SubagentView[];
   decision: Decision;
+  chat: ChatMessage[];
+  routing: {
+    selectedAgents: string[];
+    routeSource: string;
+    modelUsed?: string;
+    reasoning?: string;
+    routeError?: string;
+  };
+  usedMockFallback: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  actor: "user" | "manager_router" | "agent" | "manager_tldr" | "system";
+  label: string;
+  text: string;
+}
+
+export interface AnalyzeOptions {
+  context?: string;
+  targetType?: string;
+  targetId?: number;
+  allowMockFallback: boolean;
+  document?: File;
+  mode?: string;
+  forcedAgents?: string[];
+}
+
+interface BackendAnalyzeResponse {
+  status: string;
+  case_id: string;
+  query: string;
+  routing?: {
+    selected_agents?: string[];
+    route_source?: string;
+    model_used?: string;
+    reasoning?: string;
+    route_error?: string;
+  };
+  final_decision?: {
+    recommendation?: string;
+    rationale?: string;
+    risk_level?: "Low" | "Medium" | "High";
+    confidence_score?: number;
+  };
+  agent_insights?: Array<{
+    agent_name?: string;
+    findings?: string[];
+    recommendation?: string;
+  }>;
+  conservative_view?: string;
+  aggressive_view?: string;
+  document_analysis?: {
+    department?: string;
+    summary?: string;
+    confidence?: number;
+    model_used?: string;
+    metadata?: {
+      name?: string;
+      extension?: string;
+      size_bytes?: number;
+      mime_type?: string;
+    };
+  };
 }
 
 const fireEmployeeResult: AnalysisResult = {
@@ -127,9 +191,189 @@ const expansionResult: AnalysisResult = {
   },
 };
 
-export function analyze(query: string): AnalysisResult {
+function analyzeMock(query: string): AnalysisResult {
   const q = query.toLowerCase();
-  if (q.includes("acqui") || q.includes("buy") || q.includes("merger")) return acquireResult;
-  if (q.includes("expand") || q.includes("market") || q.includes("launch")) return expansionResult;
-  return fireEmployeeResult;
+  const base = q.includes("acqui") || q.includes("buy") || q.includes("merger")
+    ? acquireResult
+    : q.includes("expand") || q.includes("market") || q.includes("launch")
+      ? expansionResult
+      : fireEmployeeResult;
+
+  return {
+    ...base,
+    chat: [
+      { id: "u1", actor: "user", label: "User", text: query },
+      {
+        id: "m1",
+        actor: "manager_router",
+        label: "Manager Router",
+        text: "Mock mode enabled. Routing and responses are generated from local mock data.",
+      },
+      ...base.agents.map((a, idx) => ({
+        id: `a${idx + 1}`,
+        actor: "agent" as const,
+        label: a.name,
+        text: a.insight,
+      })),
+      {
+        id: "t1",
+        actor: "manager_tldr",
+        label: "Manager Agent",
+        text: `${base.decision.verdict}. ${base.decision.reasoning}`,
+      },
+    ],
+    routing: {
+      selectedAgents: base.agents.map((a) => a.name.toLowerCase().replace(" agent", "")),
+      routeSource: "mock",
+      reasoning: "Mock fallback path",
+    },
+    usedMockFallback: true,
+  };
+}
+
+export async function analyzeDecision(query: string, options: AnalyzeOptions): Promise<AnalysisResult> {
+  const backendUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || "http://localhost:8000";
+
+  try {
+    const hasDocument = Boolean(options.document);
+    let response: Response;
+
+    if (hasDocument && options.document) {
+      const form = new FormData();
+      form.append("query", query);
+      if (options.context) form.append("context", options.context);
+      if (options.targetType) form.append("target_type", options.targetType);
+      if (typeof options.targetId === "number") form.append("target_id", String(options.targetId));
+      form.append("submitted_by", "frontend");
+      if (options.mode) form.append("mode", options.mode);
+      if (options.forcedAgents) form.append("forced_agents", JSON.stringify(options.forcedAgents));
+      form.append("document", options.document);
+
+      response = await fetch(`${backendUrl}/api/analyze/upload`, {
+        method: "POST",
+        body: form,
+      });
+    } else {
+      response = await fetch(`${backendUrl}/api/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          context: options.context,
+          target_type: options.targetType,
+          target_id: options.targetId,
+          submitted_by: "frontend",
+          mode: options.mode || "hybrid",
+          forced_agents: options.forcedAgents,
+        }),
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`Backend request failed with status ${response.status}`);
+    }
+
+    const payload = (await response.json()) as BackendAnalyzeResponse;
+
+    const agentInsights = payload.agent_insights || [];
+    const selectedAgents = payload.routing?.selected_agents || [];
+    const routeSource = payload.routing?.route_source || "unknown";
+
+    const data: DataItem[] = agentInsights.map((insight) => ({
+      source: (insight.agent_name || "Unknown").toUpperCase(),
+      label: "Primary finding",
+      value: insight.findings?.[0] || "No findings",
+      trend: "flat",
+    }));
+
+    const agents: AgentInsight[] = agentInsights.map((insight) => ({
+      name: `${insight.agent_name || "Unknown"} Agent`,
+      emoji: "\u{1F9E0}",
+      insight: insight.recommendation || insight.findings?.[0] || "No recommendation",
+    }));
+
+    const subagents: SubagentView[] = [
+      {
+        stance: "conservative",
+        recommendation: "Conservative perspective",
+        reasoning: payload.conservative_view || "Not provided",
+      },
+      {
+        stance: "aggressive",
+        recommendation: "Aggressive perspective",
+        reasoning: payload.aggressive_view || "Not provided",
+      },
+    ];
+
+    const decision: Decision = {
+      verdict: payload.final_decision?.recommendation || "No recommendation",
+      reasoning: payload.final_decision?.rationale || "No rationale",
+      risk: payload.final_decision?.risk_level || "Medium",
+      confidence: Math.round(payload.final_decision?.confidence_score || 0),
+    };
+
+    const chat: ChatMessage[] = [
+      { id: "u1", actor: "user", label: "User", text: query },
+      ...(payload.document_analysis
+        ? [
+            {
+              id: "d1",
+              actor: "system" as const,
+              label: "Document Analyzer",
+              text: `Uploaded ${payload.document_analysis.metadata?.name || "file"} • Department: ${payload.document_analysis.department || "unknown"} • Summary: ${payload.document_analysis.summary || "n/a"}`,
+            },
+          ]
+        : []),
+      {
+        id: "r1",
+        actor: "manager_router",
+        label: "Manager Router",
+        text: `Selected agents: ${selectedAgents.join(", ") || "none"}. ${payload.routing?.reasoning || ""}`.trim(),
+      },
+      ...agentInsights.map((insight, idx) => ({
+        id: `a${idx + 1}`,
+        actor: "agent" as const,
+        label: `${insight.agent_name || "Unknown"} Agent`,
+        text: insight.recommendation || insight.findings?.[0] || "No recommendation",
+      })),
+      {
+        id: "m1",
+        actor: "manager_tldr",
+        label: "Manager Agent",
+        text: `${decision.verdict}. ${decision.reasoning}`,
+      },
+    ];
+
+    if (routeSource === "fallback") {
+      chat.splice(2, 0, {
+        id: "s1",
+        actor: "system",
+        label: "System",
+        text: `Fallback routing used.${payload.routing?.route_error ? ` Reason: ${payload.routing.route_error}` : ""}`,
+      });
+    }
+
+    return {
+      data,
+      agents,
+      subagents,
+      decision,
+      chat,
+      routing: {
+        selectedAgents,
+        routeSource,
+        modelUsed: payload.routing?.model_used,
+        reasoning: payload.routing?.reasoning,
+        routeError: payload.routing?.route_error,
+      },
+      usedMockFallback: false,
+    };
+  } catch (error) {
+    if (!options.allowMockFallback) {
+      throw error;
+    }
+    return analyzeMock(query);
+  }
 }

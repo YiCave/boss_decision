@@ -1,0 +1,9 @@
+Department: HR
+Summary: Employee John Tan (ID: 102) - 2026 Q1/Q2 Review
+
+Performance score: 2.1/5.0. 
+Two formal warnings issued.
+Attendance: 14 absences. 
+PIP not initiated. 
+HR policy requires PIP before termination.
+Unfair dismissal risk: HIGH.

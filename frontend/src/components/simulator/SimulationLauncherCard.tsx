@@ -1,4 +1,4 @@
-import { Clock3, Network, Orbit, Sparkles, Spline } from "lucide-react";
+import { ArrowUpRight, Clock3, MessageSquareText, Network, Orbit, Sparkles, Spline } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -143,6 +143,57 @@ export function SimulationLauncherCard({ query }: SimulationLauncherCardProps) {
             </Link>
           );
         })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          to="/simulation-live"
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            "inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-sm text-foreground transition-colors hover:bg-card/80"
+          )}
+        >
+          <Orbit className="mr-2 h-4 w-4" />
+          Open Classic Simulation
+          <ArrowUpRight className="ml-2 h-4 w-4" />
+        </Link>
+        <Link
+          to="/simulation-deep"
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            "inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-sm text-foreground transition-colors hover:bg-card/80"
+          )}
+        >
+          <Spline className="mr-2 h-4 w-4" />
+          Open Deep 2D Arena
+          <ArrowUpRight className="ml-2 h-4 w-4" />
+        </Link>
+        <Link
+          to="/simulation-network"
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            "inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-sm text-foreground transition-colors hover:bg-card/80"
+          )}
+        >
+          <Network className="mr-2 h-4 w-4" />
+          Open Network Lab
+          <ArrowUpRight className="ml-2 h-4 w-4" />
+        </Link>
+        <Link
+          to="/simulation-sales-supply-debate"
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            "inline-flex h-11 items-center rounded-lg border border-border bg-card px-5 text-sm text-foreground transition-colors hover:bg-card/80"
+          )}
+        >
+          <MessageSquareText className="mr-2 h-4 w-4" />
+          Open Sales-Supply Debate
+          <ArrowUpRight className="ml-2 h-4 w-4" />
+        </Link>
       </div>
 
       <div className="mt-5 rounded-xl border border-border bg-background/70 p-4">

@@ -1,0 +1,8 @@
+Department: Legal
+Summary: HR Termination Policy and Legal Guidelines
+
+Due process and PIP sequencing are material to legal compliance.
+Warning history is a key factor in substantiating dismissal.
+Termination without completed PIP and documented due process creates unfair dismissal liability.
+If PIP is not initiated, premature termination is legally indefensible.
+Compliance Risk: High

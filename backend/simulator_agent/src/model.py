@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SIMULATOR_MODEL = "google_genai:gemini-3.1-flash-lite-preview"
+DEFAULT_SIMULATOR_MODEL = "openai:ilmu-glm-5.1"
 
 _MODEL_CACHE: dict[str, Any] = {}
 _MODEL_INIT_ATTEMPTS: set[str] = set()
@@ -34,6 +34,14 @@ def _load_env_for_simulator() -> None:
     if google_key and not os.getenv("GEMINI_API_KEY"):
         os.environ["GEMINI_API_KEY"] = google_key
 
+    # Normalize ZHIPU (OpenAI-compatible) keys for provider SDK compatibility.
+    zhipu_key = os.getenv("ZHIPU_API_KEY")
+    if zhipu_key and not os.getenv("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = zhipu_key
+    zhipu_base_url = os.getenv("ZHIPU_BASE_URL")
+    if zhipu_base_url and not os.getenv("OPENAI_BASE_URL"):
+        os.environ["OPENAI_BASE_URL"] = zhipu_base_url
+
 
 def _infer_provider_default_model() -> str:
     _load_env_for_simulator()
@@ -41,15 +49,19 @@ def _infer_provider_default_model() -> str:
     if os.getenv("SIMULATOR_MODEL"):
         return os.getenv("SIMULATOR_MODEL", DEFAULT_SIMULATOR_MODEL)
 
+    if os.getenv("ZHIPU_API_KEY"):
+        zhipu_model = os.getenv("ZHIPU_MODEL", "ilmu-glm-5.1")
+        return zhipu_model if ":" in zhipu_model else f"openai:{zhipu_model}"
+
     # Keep defaults aligned with whichever provider key is configured.
     if os.getenv("ZHIPU_API_KEY"):
         zhipu_model = os.getenv("ZHIPU_MODEL") or os.getenv("LLM_MODEL") or "ilmu-glm-5.1"
         return zhipu_model if ":" in zhipu_model else f"openai:{zhipu_model}"
     if os.getenv("OPENAI_API_KEY"):
-        llm_model = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite-preview")
+        llm_model = os.getenv("LLM_MODEL", "ilmu-glm-5.1")
         return llm_model if ":" in llm_model else f"openai:{llm_model}"
     if os.getenv("GOOGLE_API_KEY"):
-        return "google_genai:gemini-3.1-flash-lite-preview"
+        return DEFAULT_SIMULATOR_MODEL
     if os.getenv("ANTHROPIC_API_KEY"):
         return "anthropic:claude-3-5-sonnet-latest"
     return DEFAULT_SIMULATOR_MODEL

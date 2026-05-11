@@ -5,7 +5,9 @@
 DROP TABLE IF EXISTS decision_output CASCADE;
 DROP TABLE IF EXISTS case_evidence CASCADE;
 DROP TABLE IF EXISTS decision_case CASCADE;
-DROP TABLE IF EXISTS legal_record CASCADE;
+DROP TABLE IF EXISTS legal_cases CASCADE;
+DROP TABLE IF EXISTS legal_contract CASCADE;
+DROP TABLE IF EXISTS legal_policy CASCADE;
 DROP TABLE IF EXISTS supply_record CASCADE;
 DROP TABLE IF EXISTS marketing_record CASCADE;
 DROP TABLE IF EXISTS finance_record CASCADE;
@@ -63,7 +65,8 @@ CREATE TABLE hr_record (
     reviewer_id BIGINT REFERENCES employee(employee_id) ON DELETE SET NULL,
     ai_justification TEXT,
     source_id BIGINT REFERENCES source_document(source_id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(employee_id, period)  -- Prevent duplicate records for same employee + period
 );
 
 -- Sales records (revenue contribution, deals, pipeline)
@@ -127,11 +130,14 @@ CREATE TABLE supply_record (
     shortage_flag INTEGER DEFAULT 0,
     ai_justification TEXT,
     source_id BIGINT REFERENCES source_document(source_id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(item_name, period)  -- Prevent duplicate records for same item + period
 );
 
--- Legal records (policies, compliance rules, constraints)
-CREATE TABLE legal_record (
+-- Legal tables (policies, contracts, cases)
+
+-- Legal policies (company rules and policies)
+CREATE TABLE legal_policy (
     legal_id BIGINT PRIMARY KEY,
     policy_category TEXT NOT NULL,
     policy_name TEXT NOT NULL,
@@ -140,6 +146,26 @@ CREATE TABLE legal_record (
     region TEXT DEFAULT 'Malaysia',
     ai_justification TEXT,
     source_id BIGINT REFERENCES source_document(source_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Legal contracts (employee and vendor contracts)
+CREATE TABLE legal_contract (
+    contract_id BIGINT PRIMARY KEY,
+    employee_id BIGINT NOT NULL REFERENCES employee(employee_id) ON DELETE CASCADE,
+    is_probation TEXT CHECK(is_probation IN ('Yes', 'No')),
+    notice_period INTEGER,
+    contract_type TEXT,
+    start_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Legal cases (employee legal issues and misconduct)
+CREATE TABLE legal_cases (
+    case_id BIGINT PRIMARY KEY,
+    employee_id BIGINT NOT NULL REFERENCES employee(employee_id) ON DELETE CASCADE,
+    issue_type TEXT,
+    description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -193,6 +219,8 @@ CREATE INDEX idx_sales_period ON sales_record(period);
 CREATE INDEX idx_sales_stage ON sales_record(deal_stage);
 CREATE INDEX idx_finance_employee ON finance_record(employee_id);
 CREATE INDEX idx_finance_dept ON finance_record(dept_id);
+CREATE INDEX idx_legal_contract_employee ON legal_contract(employee_id);
+CREATE INDEX idx_legal_cases_employee ON legal_cases(employee_id);
 CREATE INDEX idx_evidence_case ON case_evidence(case_id);
 CREATE INDEX idx_evidence_source ON case_evidence(source_table, record_id);
 
@@ -205,7 +233,9 @@ COMMENT ON TABLE sales_record IS 'Revenue contribution, deals closed, pipeline s
 COMMENT ON TABLE finance_record IS 'Salaries, budgets, expenses, departmental KPIs';
 COMMENT ON TABLE marketing_record IS 'Campaign metrics, ROI, channel performance';
 COMMENT ON TABLE supply_record IS 'Inventory levels, demand forecasts, procurement tracking';
-COMMENT ON TABLE legal_record IS 'Company policies, compliance rules, legal constraints';
+COMMENT ON TABLE legal_policy IS 'Company policies, compliance rules, legal constraints';
+COMMENT ON TABLE legal_contract IS 'Employee and vendor contract details';
+COMMENT ON TABLE legal_cases IS 'Employee legal issues and misconduct cases';
 COMMENT ON TABLE decision_case IS 'User queries submitted to the AI decision engine';
 COMMENT ON TABLE case_evidence IS 'Links decision cases to relevant records for explainability';
 COMMENT ON TABLE decision_output IS 'Final manager verdicts with multi-agent rationale';

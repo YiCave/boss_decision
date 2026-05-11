@@ -1,0 +1,9 @@
+Department: Marketing
+Summary: Digital Campaign Performance Report
+
+Campaign ROI: 0.8x (below target 1.5x)
+Audience segmentation: broad, no remarketing.
+Conversion rate dropped 22% Q2 vs Q1.
+Customer churn signal detected.
+Campaign effectiveness risk is elevated.
+Recommendation: Reallocate budget and run A/B creative tests immediately.

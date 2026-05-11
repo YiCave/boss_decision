@@ -46,6 +46,12 @@ def _load_env() -> None:
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key and not os.getenv("GEMINI_API_KEY"):
         os.environ["GEMINI_API_KEY"] = google_key
+    zhipu_key = os.getenv("ZHIPU_API_KEY")
+    if zhipu_key and not os.getenv("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = zhipu_key
+    zhipu_base_url = os.getenv("ZHIPU_BASE_URL")
+    if zhipu_base_url and not os.getenv("OPENAI_BASE_URL"):
+        os.environ["OPENAI_BASE_URL"] = zhipu_base_url
 
 
 def _infer_model_name() -> str:
@@ -53,13 +59,14 @@ def _infer_model_name() -> str:
     if os.getenv("SIMULATOR_MODEL"):
         return str(os.getenv("SIMULATOR_MODEL"))
     if os.getenv("ZHIPU_API_KEY"):
-        name = os.getenv("ZHIPU_MODEL") or os.getenv("LLM_MODEL") or "ilmu-glm-5.1"
+        zhipu_model = os.getenv("ZHIPU_MODEL", "ilmu-glm-5.1")
+        name = os.getenv("ZHIPU_MODEL") or os.getenv("LLM_MODEL") or zhipu_model
         return name if ":" in name else f"openai:{name}"
     if os.getenv("OPENAI_API_KEY"):
-        name = os.getenv("LLM_MODEL", "gpt-4.1-mini")
+        name = os.getenv("LLM_MODEL", "ilmu-glm-5.1")
         return name if ":" in name else f"openai:{name}"
     if os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"):
-        return "google_genai:gemini-3.1-flash-lite-preview"
+        return "openai:ilmu-glm-5.1"
     if os.getenv("ANTHROPIC_API_KEY"):
         return "anthropic:claude-3-5-sonnet-latest"
     return "openai:gpt-4.1-mini"
